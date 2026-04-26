@@ -1,0 +1,54 @@
+name: Deploy to Databricks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Databricks CLI
+        run: |
+          pip install --upgrade pip
+          pip install databricks-cli
+
+      - name: Configure Databricks CLI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          echo "[DEFAULT]" > ~/.databrickscfg
+          echo "host = $DATABRICKS_HOST" >> ~/.databrickscfg
+          echo "token = $DATABRICKS_TOKEN" >> ~/.databrickscfg
+
+      - name: Deploy PrepAmb notebook
+        run: |
+          databricks workspace import_dir \
+            ./PrepAmb \
+            /Workspace/Users/ajuarezm88@gmail.com/proyectosmartdata/ETL \
+            --overwrite
+
+      - name: Deploy proceso notebooks
+        run: |
+          databricks workspace import_dir \
+            ./proceso \
+            /Workspace/Users/ajuarezm88@gmail.com/proyectosmartdata/ETL \
+            --overwrite
+
+      - name: Trigger Databricks Job
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks jobs run-now --job-id ${{ secrets.JOB_ID }}
