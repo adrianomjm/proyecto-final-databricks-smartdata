@@ -199,7 +199,9 @@ Ejecutar el **Job** `Job_Pipeline_SmartData` desde Workflows en Databricks.
 | 1 | [02_unity_catalog.png](evidencias/02_unity_catalog.png) | Unity Catalog con 3 esquemas |
 | 2 | [03_job_ejecutado.png](evidencias/03_job_ejecutado.png) | Job ejecutado exitosamente |
 | 3 | [04_managed_identity.png](evidencias/04_managed_identity.png) | Access Connector + IAM |
-
+| 4 | [08_cicd_pipeline_success.png](evidencias/08_cicd_pipeline_success.png) | **CI/CD GitHub Actions DEV → PROD ejecutado** |
+| 5 | [09_notebooks_dev.png](evidencias/09_notebooks_dev.png) | Notebooks desplegados en workspace DEV |
+| 6 | [10_notebooks_prod.png](evidencias/10_notebooks_prod.png) | Notebooks desplegados en workspace PROD |
 ---
 
 ## 👤 Autor
