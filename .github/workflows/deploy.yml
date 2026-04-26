@@ -104,3 +104,84 @@ jobs:
         run: |
           echo "✅ Pipeline desplegado exitosamente DEV → PROD"
           echo "📁 Workspace path: $WORKSPACE_PATH"
+
+  # ─────────────────────────────────────────────────────────
+  # 3️⃣ EJECUTAR PIPELINE EN PROD (Preparación → Extract → Transform → Load → Grants)
+  # ─────────────────────────────────────────────────────────
+  run-pipeline-prod:
+    name: 🎬 Run ETL Pipeline in PROD
+    runs-on: ubuntu-latest
+    needs: deploy-prod
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_PROD_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: 🎬 Execute Orchestrator (Prep → Extract → Transform → Load)
+        run: |
+          echo "🚀 Lanzando Orquestador en PROD..."
+          databricks jobs submit --no-wait --json '{
+            "run_name": "GitHub_Actions_ETL_Run",
+            "tasks": [{
+              "task_key": "run_orquestador",
+              "notebook_task": {
+                "notebook_path": "/Shared/proyectosmartdata/ETL/5.Orquestador",
+                "base_parameters": {
+                  "catalogo": "catalog_proyectosmartdata"
+                }
+              },
+              "new_cluster": {
+                "spark_version": "15.4.x-scala2.12",
+                "node_type_id": "Standard_D4ds_v5",
+                "num_workers": 1,
+                "data_security_mode": "SINGLE_USER"
+              },
+              "timeout_seconds": 1800
+            }]
+          }' > submit_response.json
+          
+          RUN_ID=$(jq -r '.run_id' submit_response.json)
+          echo "📋 Run ID: $RUN_ID"
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+
+      - name: ⏳ Wait for ETL pipeline to complete
+        run: |
+          echo "Esperando a que termine el run $RUN_ID..."
+          while true; do
+            STATE=$(databricks jobs get-run $RUN_ID | jq -r '.state.life_cycle_state')
+            RESULT=$(databricks jobs get-run $RUN_ID | jq -r '.state.result_state // "PENDING"')
+            echo "Estado: $STATE | Resultado: $RESULT"
+            
+            if [ "$STATE" = "TERMINATED" ]; then
+              if [ "$RESULT" = "SUCCESS" ]; then
+                echo "✅ ETL Pipeline completado exitosamente"
+                break
+              else
+                echo "❌ ETL Pipeline falló con resultado: $RESULT"
+                exit 1
+              fi
+            elif [ "$STATE" = "INTERNAL_ERROR" ] || [ "$STATE" = "SKIPPED" ]; then
+              echo "❌ ETL Pipeline en estado: $STATE"
+              exit 1
+            fi
+            
+            sleep 30
+          done
+
+      - name: 🔐 Pipeline summary
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "✅ PIPELINE CI/CD COMPLETO"
+          echo "═══════════════════════════════════════"
+          echo "1. ✅ Preparación Ambiente"
+          echo "2. ✅ Extract (Ingest Movies + FilmDetails)"
+          echo "3. ✅ Transform Silver"
+          echo "4. ✅ Load Golden"
+          echo "═══════════════════════════════════════"
+          echo "📊 Workspace: ${{ secrets.DATABRICKS_PROD_HOST }}"
+          echo "🆔 Run ID: $RUN_ID"
