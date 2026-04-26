@@ -1,7 +1,7 @@
 # Databricks notebook source
 # === ORQUESTADOR DEL PIPELINE ETL ===
-# Ejecuta los notebooks en orden: Preparación → Ingesta → Transform → Load
-# Detecta automáticamente la ruta donde está este notebook
+# Ejecuta los notebooks en orden: Preparacion -> Ingesta -> Transform -> Load
+# Detecta automaticamente la ruta donde esta este notebook
 # Funciona en cualquier workspace (DEV, PROD, /Users/, /Shared/, etc.)
 
 import os
@@ -10,16 +10,18 @@ RUTA_BASE = os.path.dirname(
     dbutils.notebook.entry_point.getDbutils()
     .notebook().getContext().notebookPath().get()
 )
-print(f"📁 RUTA_BASE detectada: {RUTA_BASE}")
+print(f"RUTA_BASE detectada: {RUTA_BASE}")
 
-# === PARÁMETROS GLOBALES ===
+# === PARAMETROS GLOBALES ===
 catalogo = "catalog_proyectosmartdata"
 storageName = "adlssmartdata2511"
 container = "raw"
 
-# === 1. PREPARACIÓN AMBIENTE ===
+# COMMAND ----------
+
+# === 1. PREPARACION AMBIENTE ===
 print("=" * 60)
-print("🔧 1. Preparación de ambiente")
+print("1. Preparacion de ambiente")
 print("=" * 60)
 dbutils.notebook.run(
     f"{RUTA_BASE}/1.Preparacion_Ambiente",
@@ -32,11 +34,13 @@ dbutils.notebook.run(
         "storageName": storageName
     }
 )
-print("✅ Preparación de ambiente completada")
+print("OK Preparacion de ambiente completada")
+
+# COMMAND ----------
 
 # === 2. INGESTA MOVIES ===
 print("=" * 60)
-print("📥 2. Ingesta Movies (RAW → BRONZE)")
+print("2. Ingesta Movies (RAW -> BRONZE)")
 print("=" * 60)
 dbutils.notebook.run(
     f"{RUTA_BASE}/2.Ingest_Movies",
@@ -48,11 +52,13 @@ dbutils.notebook.run(
         "storageName": storageName
     }
 )
-print("✅ Ingesta Movies completada")
+print("OK Ingesta Movies completada")
+
+# COMMAND ----------
 
 # === 3. INGESTA FILM DETAILS ===
 print("=" * 60)
-print("📥 3. Ingesta FilmDetails (RAW → BRONZE)")
+print("3. Ingesta FilmDetails (RAW -> BRONZE)")
 print("=" * 60)
 dbutils.notebook.run(
     f"{RUTA_BASE}/2.Ingest_FilmDetails",
@@ -64,11 +70,13 @@ dbutils.notebook.run(
         "storageName": storageName
     }
 )
-print("✅ Ingesta FilmDetails completada")
+print("OK Ingesta FilmDetails completada")
 
-# === 4. TRANSFORMACIÓN SILVER ===
+# COMMAND ----------
+
+# === 4. TRANSFORMACION SILVER ===
 print("=" * 60)
-print("🔄 4. Transform Silver (BRONZE → SILVER)")
+print("4. Transform Silver (BRONZE -> SILVER)")
 print("=" * 60)
 dbutils.notebook.run(
     f"{RUTA_BASE}/3.Transform_Silver",
@@ -79,11 +87,13 @@ dbutils.notebook.run(
         "esquema_sink": "silver"
     }
 )
-print("✅ Transform Silver completada")
+print("OK Transform Silver completada")
+
+# COMMAND ----------
 
 # === 5. LOAD GOLDEN ===
 print("=" * 60)
-print("🏆 5. Load Golden (SILVER → GOLDEN)")
+print("5. Load Golden (SILVER -> GOLDEN)")
 print("=" * 60)
 dbutils.notebook.run(
     f"{RUTA_BASE}/4.Load_Golden",
@@ -94,8 +104,10 @@ dbutils.notebook.run(
         "esquema_sink": "golden"
     }
 )
-print("✅ Load Golden completada")
+print("OK Load Golden completada")
+
+# COMMAND ----------
 
 print("\n" + "=" * 60)
-print("🎉 PIPELINE ETL COMPLETO — TODOS LOS NOTEBOOKS EJECUTADOS")
+print("PIPELINE ETL COMPLETO - TODOS LOS NOTEBOOKS EJECUTADOS")
 print("=" * 60)
