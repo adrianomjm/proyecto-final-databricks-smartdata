@@ -36,10 +36,10 @@ flowchart LR
 flowchart LR
     A[👨‍💻 Developer] -->|git push main| B[GitHub Repo]
     B -->|trigger| C[GitHub Actions<br/>deploy.yml]
-    C --> D[1️⃣ Sync notebooks<br/>→ Workspace DEV]
-    D --> E[2️⃣ Promote notebooks<br/>→ Workspace PROD]
-    E --> F[3️⃣ Update Job<br/>en PROD]
-    F --> G[✅ Pipeline desplegado]
+    C --> D[1️⃣ deploy-dev<br/>Sync notebooks → DEV]
+    D --> E[2️⃣ deploy-prod<br/>Promote notebooks → PROD]
+    E --> F[3️⃣ run-pipeline-prod<br/>Ejecuta ETL en PROD]
+    F --> G[✅ Bronze → Silver → Golden]
 ```
 
 ### Flujo de datos (Medallion)
@@ -73,11 +73,22 @@ Dashboard nativo de Databricks construido sobre las tablas `golden.*`.
 
 ## 🔄 Pipeline CI/CD (GitHub Actions)
 
-Cada `git push` a `main` dispara el workflow `.github/workflows/deploy.yml` que:
+Cada `git push` a `main` dispara el workflow `.github/workflows/deploy.yml` que ejecuta **3 jobs encadenados**:
 
-1. **Sincroniza notebooks** de la carpeta `proceso/` y `PrepAmb/` al workspace **DEV** (`dbw-smartdata`) vía Databricks CLI
-2. **Promociona los notebooks ya validados** al workspace **PROD** (`dbw-smartdata-prod`)
-3. **Actualiza el Job** `Job_Pipeline_SmartData` en PROD con la última versión
+| Job | Trigger | Descripción |
+|---|---|---|
+| **1️⃣ deploy-dev** | Push a `main` | Sincroniza notebooks de `PrepAmb/` y `proceso/` al workspace **DEV** vía Databricks CLI |
+| **2️⃣ deploy-prod** | `needs: deploy-dev` ✅ | Promociona los notebooks validados al workspace **PROD** |
+| **3️⃣ run-pipeline-prod** | `needs: deploy-prod` ✅ | Ejecuta el ETL completo en PROD: **Preparación → Extract → Transform → Load** |
+
+### Características del pipeline
+
+- ✅ **Multi-ambiente** (DEV + PROD aislados)
+- ✅ **Promoción condicional** — PROD solo si DEV pasa
+- ✅ **Ejecución automática del ETL** post-deploy
+- ✅ **Cluster on-demand** para el run (Standard_D4ds_v5)
+- ✅ **Idempotente** (`--overwrite` + retry safety)
+- ✅ **Trigger automático** en push + manual via `workflow_dispatch`
 
 ### Secrets requeridos en GitHub
 
@@ -194,14 +205,38 @@ Ejecutar el **Job** `Job_Pipeline_SmartData` desde Workflows en Databricks.
 
 ## 📸 Evidencias de ejecución
 
+Capturas que documentan cada hito del proyecto, desde el aprovisionamiento de infraestructura hasta el pipeline CI/CD funcionando end-to-end.
+
+### 🏗️ Infraestructura Azure
+
 | # | Captura | Descripción |
 |---|---|---|
-| 1 | [02_unity_catalog.png](evidencias/02_unity_catalog.png) | Unity Catalog con 3 esquemas |
-| 2 | [03_job_ejecutado.png](evidencias/03_job_ejecutado.png) | Job ejecutado exitosamente |
-| 3 | [04_managed_identity.png](evidencias/04_managed_identity.png) | Access Connector + IAM |
-| 4 | [08_cicd_pipeline_success.png](evidencias/08_cicd_pipeline_success.png) | **CI/CD GitHub Actions DEV → PROD ejecutado** |
-| 5 | [09_notebooks_dev.png](evidencias/09_notebooks_dev.png) | Notebooks desplegados en workspace DEV |
-| 6 | [10_notebooks_prod.png](evidencias/10_notebooks_prod.png) | Notebooks desplegados en workspace PROD |
+| 01 | [01_recursos_creados_azure.png](evidencias/01_recursos_creados_azure.png) | Recursos Azure aprovisionados en `rg-proyectosmartdata` (Storage + 2 Workspaces) |
+| 04 | [04_managed_identity.png](evidencias/04_managed_identity.png) | Access Connector con Managed Identity + rol `Storage Blob Data Contributor` |
+
+### 🗄️ Unity Catalog y Job
+
+| # | Captura | Descripción |
+|---|---|---|
+| 02 | [02_unity_catalog.png](evidencias/02_unity_catalog.png) | Catálogo `catalog_proyectosmartdata` con esquemas `bronze`, `silver`, `golden` |
+| 03 | [03_job_ejecutado.png](evidencias/03_job_ejecutado.png) | Job `Job_Pipeline_SmartData` ejecutado exitosamente en Databricks |
+
+### 📊 Dashboard analítico
+
+| # | Captura | Descripción |
+|---|---|---|
+| 05 | [05_dashboard_smartdata_1.png](evidencias/05_dashboard_smartdata_1.png) | Dashboard — KPIs principales |
+| 06 | [06_dashboard_smartdata_2.png](evidencias/06_dashboard_smartdata_2.png) | Dashboard — Top directores por revenue |
+| 07 | [07_dashboard_smartdata_3.png](evidencias/07_dashboard_smartdata_3.png) | Dashboard — Análisis por género |
+
+### 🔄 CI/CD GitHub Actions (DEV → PROD)
+
+| # | Captura | Descripción |
+|---|---|---|
+| 08 | [08_cicd_pipeline_success.png](evidencias/08_cicd_pipeline_success.png) | **Pipeline CI/CD completo: deploy DEV → deploy PROD → run ETL** |
+| 09 | [09_notebooks_dev.png](evidencias/09_notebooks_dev.png) | Notebooks desplegados automáticamente en workspace **DEV** |
+| 10 | [10_notebooks_prod.png](evidencias/10_notebooks_prod.png) | Notebooks desplegados automáticamente en workspace **PROD** |
+
 ---
 
 ## 👤 Autor
