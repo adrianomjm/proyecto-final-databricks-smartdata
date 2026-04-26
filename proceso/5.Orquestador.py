@@ -1,10 +1,11 @@
 # Databricks notebook source
 # === ORQUESTADOR DEL PIPELINE ETL ===
 # Ejecuta los notebooks en orden: Preparación → Ingesta → Transform → Load
-
 # Detecta automáticamente la ruta donde está este notebook
 # Funciona en cualquier workspace (DEV, PROD, /Users/, /Shared/, etc.)
+
 import os
+
 RUTA_BASE = os.path.dirname(
     dbutils.notebook.entry_point.getDbutils()
     .notebook().getContext().notebookPath().get()
