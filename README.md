@@ -8,42 +8,28 @@ Pipeline ETL **Medallion** sobre **Azure Databricks + ADLS Gen2** con autenticac
 
 ## 🏗️ Arquitectura
 
-┌─────────────────┐
-             │   Datasets CSV  │  (Movies, FilmDetails, etc.)
-             │   (Kaggle)      │
-             └────────┬────────┘
-                      │ upload
-                      ▼
-   ┌──────────────────────────────────────┐
-   │   ADLS Gen2 — adlssmartdata2511      │
-   │   ┌────────┬────────┬────────┐       │
-   │   │  raw   │ bronze │ silver │ ...   │
-   │   └────────┴────────┴────────┘       │
-   └──────────────┬───────────────────────┘
-                  │ Managed Identity
-                  │ (Access Connector)
-                  ▼
-   ┌──────────────────────────────────────┐
-   │     Azure Databricks Workspace       │
-   │   ┌────────────────────────────┐     │
-   │   │  Unity Catalog             │     │
-   │   │  catalog_proyectosmartdata │     │
-   │   │   ├── bronze (Delta)       │     │
-   │   │   ├── silver (Delta)       │     │
-   │   │   └── golden (Delta)       │     │
-   │   └────────────────────────────┘     │
-   │              ▲                       │
-   │              │ ETL PySpark           │
-   │   ┌────────────────────────────┐     │
-   │   │   Cluster: cluster_smartdata │   │
-   │   └────────────────────────────┘     │
-   │              ▲                       │
-   │   ┌────────────────────────────┐     │
-   │   │  Job: Job_Pipeline_SmartData │   │
-   │   │  (Orquestador)              │    │
-   │   └────────────────────────────┘     │
-   └──────────────────────────────────────┘
+```mermaid
+flowchart LR
+    A[📁 Datasets CSV<br/>Kaggle] -->|upload| B[(ADLS Gen2<br/>adlssmartdata2511)]
+    B --> C{{🔐 Managed Identity<br/>Access Connector}}
+    C --> D[Azure Databricks<br/>Workspace]
+    D --> E[(Unity Catalog<br/>catalog_proyectosmartdata)]
+    E --> F[🥉 Bronze]
+    E --> G[🥈 Silver]
+    E --> H[🥇 Golden]
+    F -->|ETL PySpark| G
+    G -->|ETL PySpark| H
+    I[⚙️ Cluster<br/>cluster_smartdata] --> D
+    J[🔄 Job Workflow<br/>Job_Pipeline_SmartData] --> I
+```
 
+### Flujo de datos (Medallion)
+
+| Capa | Origen | Destino | Transformaciones |
+|------|--------|---------|------------------|
+| 🥉 Bronze | CSVs en `raw/` | Tablas Delta crudas | Casteo de tipos, lectura sin transformación |
+| 🥈 Silver | Bronze | Tabla Delta limpia | JOIN entre fuentes, cálculo de profit y ROI |
+| 🥇 Golden | Silver | KPIs Delta | Agregaciones por director y género |
 ---
 
 ## 📂 Estructura del repositorio
