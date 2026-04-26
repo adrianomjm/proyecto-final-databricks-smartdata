@@ -2,7 +2,14 @@
 # === ORQUESTADOR DEL PIPELINE ETL ===
 # Ejecuta los notebooks en orden: Preparación → Ingesta → Transform → Load
 
-RUTA_BASE = "/Users/ajuarezm88@gmail.com/proyectosmartdata/ETL"
+# Detecta automáticamente la ruta donde está este notebook
+# Funciona en cualquier workspace (DEV, PROD, /Users/, /Shared/, etc.)
+import os
+RUTA_BASE = os.path.dirname(
+    dbutils.notebook.entry_point.getDbutils()
+    .notebook().getContext().notebookPath().get()
+)
+print(f"📁 RUTA_BASE detectada: {RUTA_BASE}")
 
 # === PARÁMETROS GLOBALES ===
 catalogo = "catalog_proyectosmartdata"
