@@ -1,0 +1,235 @@
+{
+  "datasets": [
+    {
+      "name": "c94d2c61",
+      "displayName": "top_directors",
+      "queryLines": [
+        "SELECT \r\n",
+        "  director,\r\n",
+        "  cantidad_peliculas,\r\n",
+        "  ROUND(revenue_total / 1000000, 2) AS revenue_millones,\r\n",
+        "  ROUND(score_promedio, 2) AS score\r\n",
+        "FROM catalog_proyectosmartdata.golden.kpi_por_director\r\n",
+        "ORDER BY revenue_total DESC\r\n",
+        "LIMIT 15"
+      ],
+      "catalog": "catalog_proyectosmartdata",
+      "schema": "golden"
+    },
+    {
+      "name": "cf7eaab8",
+      "displayName": "por_genero",
+      "queryLines": [
+        "SELECT \r\n",
+        "  genre_principal,\r\n",
+        "  cantidad_peliculas,\r\n",
+        "  ROUND(score_promedio, 2) AS score\r\n",
+        "FROM catalog_proyectosmartdata.golden.kpi_por_genero\r\n",
+        "ORDER BY cantidad_peliculas DESC"
+      ],
+      "catalog": "catalog_proyectosmartdata",
+      "schema": "golden"
+    }
+  ],
+  "pages": [
+    {
+      "name": "3ee2b479",
+      "displayName": "Dashboard_SmartData",
+      "layout": [
+        {
+          "widget": {
+            "name": "64d2ddfb",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# 🎬 Dashboard Proyecto SmartData\n",
+                "\n",
+                "KPIs de directores y géneros — Pipeline ETL Medallion sobre Databricks"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "top-15-directores-por-revenue-m-usd",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c94d2c61",
+                  "fields": [
+                    {
+                      "name": "director",
+                      "expression": "`director`"
+                    },
+                    {
+                      "name": "sum(revenue_millones)",
+                      "expression": "SUM(`revenue_millones`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "🏆 Top 15 Directores por Revenue (M USD)"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "director",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(revenue_millones)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "peliculas-por-genero",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cf7eaab8",
+                  "fields": [
+                    {
+                      "name": "genre_principal",
+                      "expression": "`genre_principal`"
+                    },
+                    {
+                      "name": "sum(cantidad_peliculas)",
+                      "expression": "SUM(`cantidad_peliculas`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "🎭 Películas por Género"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "genre_principal",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(cantidad_peliculas)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "detalle-top-directores",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c94d2c61",
+                  "fields": [
+                    {
+                      "name": "director",
+                      "expression": "`director`"
+                    },
+                    {
+                      "name": "cantidad_peliculas",
+                      "expression": "`cantidad_peliculas`"
+                    },
+                    {
+                      "name": "revenue_millones",
+                      "expression": "`revenue_millones`"
+                    },
+                    {
+                      "name": "score",
+                      "expression": "`score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "⭐ Detalle Top Directores",
+                "showDescription": false
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "director"
+                  },
+                  {
+                    "fieldName": "cantidad_peliculas"
+                  },
+                  {
+                    "fieldName": "revenue_millones"
+                  },
+                  {
+                    "fieldName": "score"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
