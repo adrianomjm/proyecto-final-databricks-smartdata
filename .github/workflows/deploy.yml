@@ -1,54 +1,106 @@
-name: Deploy to Databricks
+name: Deploy Pipeline to Databricks (DEV → PROD)
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - 'PrepAmb/**'
+      - 'proceso/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+env:
+  WORKSPACE_PATH: /Shared/proyectosmartdata/ETL
 
 jobs:
-  deploy:
+  # ─────────────────────────────────────────────────────────
+  # 1️⃣ DEPLOY A DEV
+  # ─────────────────────────────────────────────────────────
+  deploy-dev:
+    name: 🟢 Deploy to DEV Workspace
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install Databricks CLI
-        run: |
-          pip install --upgrade pip
-          pip install databricks-cli
+        uses: databricks/setup-cli@main
 
-      - name: Configure Databricks CLI
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          echo "[DEFAULT]" > ~/.databrickscfg
-          echo "host = $DATABRICKS_HOST" >> ~/.databrickscfg
-          echo "token = $DATABRICKS_TOKEN" >> ~/.databrickscfg
+      - name: Verify CLI auth (DEV)
+        run: databricks current-user me
 
-      - name: Deploy PrepAmb notebook
-        run: |
-          databricks workspace import_dir \
-            ./PrepAmb \
-            /Workspace/Users/ajuarezm88@gmail.com/proyectosmartdata/ETL \
-            --overwrite
+      - name: Create workspace folder in DEV
+        run: databricks workspace mkdirs "$WORKSPACE_PATH"
 
-      - name: Deploy proceso notebooks
+      - name: Sync PrepAmb notebook to DEV
         run: |
-          databricks workspace import_dir \
-            ./proceso \
-            /Workspace/Users/ajuarezm88@gmail.com/proyectosmartdata/ETL \
-            --overwrite
+          databricks workspace import \
+            --format SOURCE --language PYTHON --overwrite \
+            --file "PrepAmb/1.Preparacion_Ambiente.py" \
+            "$WORKSPACE_PATH/1.Preparacion_Ambiente"
 
-      - name: Trigger Databricks Job
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      - name: Sync proceso notebooks to DEV
         run: |
-          databricks jobs run-now --job-id ${{ secrets.JOB_ID }}
+          for nb in proceso/*.py; do
+            name=$(basename "$nb" .py)
+            echo "📤 Uploading $name to DEV..."
+            databricks workspace import \
+              --format SOURCE --language PYTHON --overwrite \
+              --file "$nb" \
+              "$WORKSPACE_PATH/$name"
+          done
+
+      - name: List deployed notebooks in DEV
+        run: databricks workspace list "$WORKSPACE_PATH"
+
+  # ─────────────────────────────────────────────────────────
+  # 2️⃣ DEPLOY A PROD (solo si DEV pasó)
+  # ─────────────────────────────────────────────────────────
+  deploy-prod:
+    name: 🔴 Deploy to PROD Workspace
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_PROD_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Verify CLI auth (PROD)
+        run: databricks current-user me
+
+      - name: Create workspace folder in PROD
+        run: databricks workspace mkdirs "$WORKSPACE_PATH"
+
+      - name: Sync PrepAmb notebook to PROD
+        run: |
+          databricks workspace import \
+            --format SOURCE --language PYTHON --overwrite \
+            --file "PrepAmb/1.Preparacion_Ambiente.py" \
+            "$WORKSPACE_PATH/1.Preparacion_Ambiente"
+
+      - name: Sync proceso notebooks to PROD
+        run: |
+          for nb in proceso/*.py; do
+            name=$(basename "$nb" .py)
+            echo "📤 Uploading $name to PROD..."
+            databricks workspace import \
+              --format SOURCE --language PYTHON --overwrite \
+              --file "$nb" \
+              "$WORKSPACE_PATH/$name"
+          done
+
+      - name: List deployed notebooks in PROD
+        run: databricks workspace list "$WORKSPACE_PATH"
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Pipeline desplegado exitosamente DEV → PROD"
+          echo "📁 Workspace path: $WORKSPACE_PATH"
