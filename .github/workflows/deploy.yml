@@ -137,9 +137,18 @@ jobs:
               },
               "new_cluster": {
                 "spark_version": "15.4.x-scala2.12",
-                "node_type_id": "Standard_D4ds_v6",
-                "num_workers": 1,
-                "data_security_mode": "SINGLE_USER"
+                "node_type_id": "Standard_D4pds_v6",
+                "num_workers": 0,
+                "data_security_mode": "SINGLE_USER",
+                "single_user_name": "ajuarezm88@gmail.com",
+                "runtime_engine": "STANDARD",
+                "spark_conf": {
+                  "spark.databricks.cluster.profile": "singleNode",
+                  "spark.master": "local[*]"
+                },
+                "custom_tags": {
+                  "ResourceClass": "SingleNode"
+                }
               },
               "timeout_seconds": 1800
             }]
