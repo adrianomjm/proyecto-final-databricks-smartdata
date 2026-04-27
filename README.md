@@ -238,20 +238,6 @@ Capturas que documentan cada hito del proyecto, desde el aprovisionamiento de in
 | 10 | [10_notebooks_prod.png](evidencias/10_notebooks_prod.png) | Notebooks desplegados automáticamente en workspace **PROD** |
 
 ---
-## ⚠️ Nota sobre cuota Azure
-
-El job `run-pipeline-prod` está implementado y funcional (deploy + submit OK), 
-pero la ejecución del cluster on-demand requiere VMs adicionales que la 
-suscripción Azure trial no autoriza por defecto:
-
-- `Standard_Dv5 family`: cuota = 0 cores en eastus2
-- `Standard_Dpdsv6 family (ARM)`: cuota saturada por workspaces existentes
-
-**Resolución en producción real:** abrir un quota request en Azure 
-([aka.ms/ProdportalCRP](https://aka.ms/ProdportalCRP)) o usar un cluster 
-preexistente referenciado con `existing_cluster_id`. La lógica del pipeline 
-no requiere cambios.
----
 
 ## 👤 Autor
 
